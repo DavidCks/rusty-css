@@ -1,0 +1,25 @@
+[package]
+name = "rusty-css"
+description = "rusty-css is a way to write css in rust without leaving the rust syntax or making properties inaccessible"
+repository = "https://github.com/DavidCks/rusty-css"
+readme = "README.md"
+license = "MIT"
+keywords = ["css", "css-in-rust", "style", "inline-style", "web"]
+categories = ["web-programming"]
+homepage = "https://github.com/DavidCks"
+version = "0.1.0"
+authors = ["David Christ <david.christ99@live.de>"]
+edition = "2021"
+
+exclude = [
+    "tests/*",
+    ".github/*",
+]
+
+[dependencies]
+# used for logging to the dev tools console in the browser
+wasm-logger = "0.2"
+log = "0.4.6"
+
+# used for making structs iterable
+bevy_reflect = "0.8.1"
