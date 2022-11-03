@@ -5,7 +5,7 @@ use bevy_reflect::{Reflect, Struct};
 use std::num::ParseFloatError;
 
 // add a smart way to extract the containing float value within a string 
-trait ExtractNums {
+pub trait ExtractNums {
 
     // tries to extract the numbers from whatever string is given.
     fn try_extract_nums(&self) -> Option<String>;
@@ -25,7 +25,7 @@ impl ExtractNums for String {
 }
 
 // implementations for converting fields in a struct to a css string
-trait Style: Reflect + Struct {
+pub trait Style: Reflect + Struct {
 
     // constructor
     fn create() -> Self;
@@ -68,7 +68,7 @@ trait Style: Reflect + Struct {
                 for (i, value_reflect) in fields.iter_fields().enumerate() {
                     //function names like skewX, skewY, etc.
                     let function_name = fields.name_at(i).unwrap();
-                    let function_param = create_value_string(value_reflect);
+                    let function_param = Self::create_value_string(value_reflect);
                     let value_string = format!(" {function}({parameter})", function = &function_name, parameter = &function_param);
                     value.push_str(&value_string);
                 }
