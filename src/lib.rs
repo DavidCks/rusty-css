@@ -16,7 +16,7 @@ pub trait ExtractNums {
 
 impl ExtractNums for String {
     fn try_extract_nums(&self) -> Option<String> {
-        Some( self.chars().filter(|c| c.is_digit(10) || c == &'.').collect() )
+        Some( self.chars().filter(|c| c.is_digit(10) || c == &'.' || c == &'-').collect() )
     }
 
     fn try_to_f64(&self) -> Result<f64, ParseFloatError> {
