@@ -231,5 +231,11 @@ trait Style {
     // logs the Reflects of the given objects fields to the browser console with wasm_logger 
     fn debug(self) -> Self;
 }
+```
+
+### Reserved field names:
+
+```rust
+pseudo_class: "pseudo_class identifier" // for classes that are supposed to be exported with a psuedo-class (i.e. :before, :active, etc.) 
 
 ```

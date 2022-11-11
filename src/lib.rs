@@ -39,12 +39,19 @@ pub trait Style: Reflect + Struct {
 
             //get the name of the structs field as a String
             let mut property_name = self.name_at(i).unwrap().to_owned();
-            property_name = property_name.replace("_", "-");
+            
+            //++++++++++++++++++++++++++++++++++++++++++++
+            // horrendous way of implementing reserved keywords
+            // but I'm tired now so this will have to do
+            //++++++++++++++++++++++++++++++++++++++++++++
+            if property_name != "pseudo_class" {
+                property_name = property_name.replace("_", "-");
 
-            //initialize the value to be given for the property in property_name (i.e. width, height, transform, etc) 
-            let value = Self::create_value_string(value_reflect);
+                //initialize the value to be given for the property in property_name (i.e. width, height, transform, etc) 
+                let value = Self::create_value_string(value_reflect);
 
-            style_string.push_str( &format!("{property}:{value}; ", property = property_name, value = value) );
+                style_string.push_str( &format!("{property}:{value}; ", property = property_name, value = value) );
+            }
         }
 
         style_string
@@ -79,6 +86,27 @@ pub trait Style: Reflect + Struct {
         }
 
         value
+    }
+
+    fn as_class(&mut self) -> Result<String, &'static str> where Self: Sized {
+
+        // stores the structs ident
+        let class_name_opt = self.type_name().strip_prefix("as_class::"); 
+        if class_name_opt.is_none() { return Err("(Internal Error) couldn't strip as_class:: prefix"); }
+        
+        let mut class_name = class_name_opt.unwrap().to_owned();
+
+        // append pseudo-class name to the class name (i.e. .struct_ident:pseudo_class)
+        let pseudo = self.field("pseudo_class");
+        if !pseudo.is_none() {
+            class_name.push(':');
+            class_name.push_str(
+                pseudo.unwrap().downcast_ref::<String>().unwrap()
+            );
+        }
+           
+        let class_string = format!(".{} {{ {}}}", class_name, self.inline());
+        Ok(class_string)
     }
 
     fn debug(self) -> Self where Self: Sized {
