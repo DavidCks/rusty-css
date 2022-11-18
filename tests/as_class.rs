@@ -40,7 +40,7 @@ fn test_class_export_with_pseudo_classes_in_style_tag_1 (){
     let document = window.document().expect("couldn't get `document");
 
     // add the style for BB to the style tag in the document
-    let mut b = BB::create();
+    let b = BB::create();
     let class_name = b.as_class(&document).unwrap();
 
     assert_eq!(class_name, "BB");
@@ -53,7 +53,7 @@ fn test_class_export_with_pseudo_classes_in_style_tag_2 (){
     let document = window.document().expect("couldn't get `document");
 
     // add the style for BB to the style tag in the document
-    let mut b = BB::create();
+    let b = BB::create();
     let class_name = b.as_class(&document).unwrap();
 
     // grab the contents of the style tag of the document again

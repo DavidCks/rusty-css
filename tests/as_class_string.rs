@@ -29,7 +29,7 @@ impl Style for B {
 
 #[test]
 fn test_standard_class_string_export (){
-    let mut b = B::create();
+    let b = B::create();
     assert_eq!(b.as_class_string( b.get_struct_name().unwrap() ).unwrap(), ".B { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
 }
 
@@ -57,7 +57,7 @@ impl Style for BA {
 
 #[test]
 fn test_class_string_export_with_pseudo_classes_1 (){
-    let mut b = BA::create();
+    let b = BA::create();
     assert_eq!(b.as_class_string( b.get_struct_name().unwrap() ).unwrap(), ".BA:before { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
 }
 
@@ -86,6 +86,6 @@ impl Style for BB {
 
 #[test]
 fn test_class_string_export_with_pseudo_classes_2 (){
-    let mut b = BB::create();
+    let b = BB::create();
     assert_eq!(b.as_class_string( b.get_struct_name().unwrap() ).unwrap(), ".BB:arbitrary_name { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
 }
