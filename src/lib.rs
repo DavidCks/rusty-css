@@ -129,8 +129,9 @@ pub trait Style: Reflect + Struct {
     }
 
     fn get_struct_name(&self) -> Result<String, &'static str> where Self: Sized {
+        
         // cuts off the "arbitrary_caller_name::" from "arbitrary_caller_name::StructIdent and returns just the StructIdent"
-        let class_name_pos = self.type_name().find("::").expect("(Internal Error) couldn't find position of `::` in type_name");
+        let class_name_pos = self.type_name().rfind("::").expect("(Internal Error) couldn't find position of `::` in type_name");
         let class_name_slice = self.type_name().substring(class_name_pos + 2, self.type_name().len());
         if class_name_slice == "" { return Err("(Internal Error) couldn't strip arbitrary_caller_name:: prefix"); }
         
