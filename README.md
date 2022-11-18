@@ -34,8 +34,9 @@ regardless of the property names' or values' validity. If you have an error in y
 
 - [x] simple conversion from rust structs to inline css code
 - [ ] more reliable extraction of numeric values inside of a String
-- [ ] exporting structs as classes inside a style sheet
+- [x] exporting structs as classes inside a style sheet
     - [ ] support for queries
+    - [ ] make exporting classes less boilerplate-y
 - [ ] validating the written css code at compile time
     - [ ] automated implementation according to the css spec 
 - [ ] second layer implementation of a system with strict typing 
@@ -210,6 +211,38 @@ let inline_css: String = example_struct.inline();
 // "width: 4em; height: 2rem; background: rgb(69,13,37); transform: skewX(20deg) skewY(30deg);"
 ```
 
+## Implementing Styles as Classes
+
+Use the ```.as_class()``` function on your struct to export its style into the ```<style>``` tag of your app. For now you'll have to pass it a reference to the ```web_sys::Document``` you want to export the style into like so:
+```rust
+let style_struct = ExampleStruct::create();
+
+// grab the current document
+let window = web_sys::window().expect("No global `window` found");
+let document = window.document().expect("couldn't get `document");
+
+// export the style to the <style> tag
+let style_struct = ExampleStruct::create();
+let class_name = style_struct.as_class(&document).unwrap();
+
+assert_eq!("ExampleStruct", class_name); //true
+```
+
+in a yew component it might look like this:
+```rust
+fn view(&self, ctx: &Context<Self>) -> Html {
+    let window = window().expect("No global `window` found");
+    let document = window.document().expect("couldn't get `document");
+
+    let class_name = self.style.as_class(&document).unwrap();
+
+    html! {
+        <div class={class_name}
+        </div>
+    }
+}
+```
+
 ### Crate implements:
 
 ```rust
@@ -228,6 +261,16 @@ trait Style {
     // retruns the String Representation of a fields value
     fn create_value_string(reflect: &dyn Reflect) -> String;
 
+    // - returns the class name to put into the class attribute
+    // - inserts the style as a class into the style sheet
+    fn as_class(&mut self, document: &Document) -> Result<String, &'static str> ;
+
+    // retruns the struct as a css class String like so: .StructIdent { property: value }
+    fn as_class_string(&mut self, mut class_name: String) -> Result<String, &'static str>;
+
+    // returns the struct name
+    fn get_struct_name(&self) -> Result<String, &'static str>;
+
     // logs the Reflects of the given objects fields to the browser console with wasm_logger 
     fn debug(self) -> Self;
 }
@@ -236,6 +279,6 @@ trait Style {
 ### Reserved field names:
 
 ```rust
-pseudo_class: "pseudo_class identifier" // for classes that are supposed to be exported with a psuedo-class (i.e. :before, :active, etc.) 
+append: "this will be appended to the class name" // for classes that are supposed to be exported with a psuedo-class (i.e. :before, :active, etc.) 
 
 ```

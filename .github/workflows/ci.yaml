@@ -21,7 +21,14 @@ jobs:
           - nightly
     steps:
       - uses: actions/checkout@v3
+
+      - name: Install
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - run: cargo build --verbose
       - run: cargo test --verbose
+      - run: wasm-pack test --headless --chrome
+      - run: wasm-pack test --headless --firefox
+
   

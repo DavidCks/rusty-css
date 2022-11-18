@@ -1,8 +1,12 @@
 //! This crate can be used to convert rust structs into css, while maintaining
 //! the ability to access each field individually.
 
+//mod keywords;
+//use keywords::Pseudo;
 use bevy_reflect::{Reflect, Struct};
 use std::num::ParseFloatError;
+use web_sys::{ Document };
+use substring::*;
 
 // add a smart way to extract the containing float value within a string 
 pub trait ExtractNums {
@@ -44,7 +48,7 @@ pub trait Style: Reflect + Struct {
             // horrendous way of implementing reserved keywords
             // but I'm tired now so this will have to do
             //++++++++++++++++++++++++++++++++++++++++++++
-            if property_name != "pseudo_class" {
+            if property_name != "append" {
                 property_name = property_name.replace("_", "-");
 
                 //initialize the value to be given for the property in property_name (i.e. width, height, transform, etc) 
@@ -88,25 +92,49 @@ pub trait Style: Reflect + Struct {
         value
     }
 
-    fn as_class(&mut self) -> Result<String, &'static str> where Self: Sized {
 
-        // stores the structs ident
-        let class_name_opt = self.type_name().strip_prefix("as_class::"); 
-        if class_name_opt.is_none() { return Err("(Internal Error) couldn't strip as_class:: prefix"); }
-        
-        let mut class_name = class_name_opt.unwrap().to_owned();
+    fn as_class_string(&mut self, mut class_name: String) -> Result<String, &'static str> where Self: Sized {
 
         // append pseudo-class name to the class name (i.e. .struct_ident:pseudo_class)
-        let pseudo = self.field("pseudo_class");
-        if !pseudo.is_none() {
-            class_name.push(':');
+        let append = self.field("append");
+        if !append.is_none() {
             class_name.push_str(
-                pseudo.unwrap().downcast_ref::<String>().unwrap()
+                append.unwrap().downcast_ref::<String>().unwrap()
             );
         }
            
-        let class_string = format!(".{} {{ {}}}", class_name, self.inline());
-        Ok(class_string)
+        Ok( format!(".{} {{ {}}}", class_name, self.inline()) )
+    }
+
+    fn as_class(&mut self, document: &Document) -> Result<String, &'static str> where Self: Sized {
+        
+        let class_name = self.get_struct_name().unwrap();
+
+        // mount the class to the <style> element in <head>
+        let class_string = self.as_class_string(class_name.clone()).expect("Class string could not be created");
+
+        let head = document.head().expect("No <head> element found in the document");
+        let style_element = document.create_element("style").expect("couldn't create <style> element in this document");
+        style_element.set_attribute("id", "rusty-css").expect("couldn't set attribute of internally created style tag");
+        style_element.set_text_content(Some(&class_string));
+
+        if let Some(existent_style) = head.query_selector("#rusty-css").expect("an error occured while trying to fetch the element with id `rusty-css` in head") {
+            head.remove_child(&existent_style).expect("couldn't remove child element with id `rusty-css` in head");
+        }
+
+        head.append_child(&style_element).expect("couldn't append internally created `style` element with id `rusty-css` to head");
+
+        // return just the class name
+        Ok(class_name)
+    }
+
+    fn get_struct_name(&self) -> Result<String, &'static str> where Self: Sized {
+        // cuts off the "arbitrary_caller_name::" from "arbitrary_caller_name::StructIdent and returns just the StructIdent"
+        let class_name_pos = self.type_name().find("::").expect("(Internal Error) couldn't find position of `::` in type_name");
+        let class_name_slice = self.type_name().substring(class_name_pos + 2, self.type_name().len());
+        if class_name_slice == "" { return Err("(Internal Error) couldn't strip arbitrary_caller_name:: prefix"); }
+        
+        Ok(class_name_slice.to_owned())
     }
 
     fn debug(self) -> Self where Self: Sized {
