@@ -57,7 +57,7 @@ fn test_class_export_with_pseudo_classes_in_style_tag_2 (){
     let class_name = b.as_class(&document).unwrap();
 
     // grab the contents of the style tag of the document again
-    let style = document.query_selector("#rusty-css").unwrap();
+    let style = document.query_selector("#rusty-css-BB").unwrap();
     let style_content = style.unwrap().text_content().unwrap();
 
     // compare the inserted style with the computed class string

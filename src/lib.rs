@@ -115,10 +115,11 @@ pub trait Style: Reflect + Struct {
 
         let head = document.head().expect("No <head> element found in the document");
         let style_element = document.create_element("style").expect("couldn't create <style> element in this document");
-        style_element.set_attribute("id", "rusty-css").expect("couldn't set attribute of internally created style tag");
+        let style_id = format!("rusty-css-{}", class_name);
+        style_element.set_attribute("id", &style_id ).expect("couldn't set attribute of internally created style tag");
         style_element.set_text_content(Some(&class_string));
 
-        if let Some(existent_style) = head.query_selector("#rusty-css").expect("an error occured while trying to fetch the element with id `rusty-css` in head") {
+        if let Some(existent_style) = head.query_selector(&format!("#{}", style_id) ).expect("an error occured while trying to fetch the element with id `rusty-css` in head") {
             head.remove_child(&existent_style).expect("couldn't remove child element with id `rusty-css` in head");
         }
 
