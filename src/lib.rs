@@ -93,7 +93,7 @@ pub trait Style: Reflect + Struct {
     }
 
 
-    fn as_class_string(&mut self, mut class_name: String) -> Result<String, &'static str> where Self: Sized {
+    fn as_class_string(&self, mut class_name: String) -> Result<String, &'static str> where Self: Sized {
 
         // append pseudo-class name to the class name (i.e. .struct_ident:pseudo_class)
         let append = self.field("append");
@@ -106,7 +106,7 @@ pub trait Style: Reflect + Struct {
         Ok( format!(".{} {{ {}}}", class_name, self.inline()) )
     }
 
-    fn as_class(&mut self, document: &Document) -> Result<String, &'static str> where Self: Sized {
+    fn as_class(&self, document: &Document) -> Result<String, &'static str> where Self: Sized {
         
         let class_name = self.get_struct_name().unwrap();
 
