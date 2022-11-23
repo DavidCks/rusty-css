@@ -41,7 +41,7 @@ fn test_class_export_with_pseudo_classes_in_style_tag_1 (){
 
     // add the style for BB to the style tag in the document
     let b = BB::create();
-    let class_name = b.as_class(&document).unwrap();
+    let class_name = &b.as_class(&document).unwrap();
 
     assert_eq!(class_name, "BB");
 }
@@ -54,13 +54,13 @@ fn test_class_export_with_pseudo_classes_in_style_tag_2 (){
 
     // add the style for BB to the style tag in the document
     let b = BB::create();
-    let class_name = b.as_class(&document).unwrap();
+    let class_name = &b.as_class(&document).unwrap();
 
     // grab the contents of the style tag of the document again
     let style = document.query_selector("#rusty-css-BB").unwrap();
     let style_content = style.unwrap().text_content().unwrap();
 
     // compare the inserted style with the computed class string
-    assert_eq!(style_content, b.as_class_string(class_name).unwrap());
+    assert_eq!(style_content, b.as_class_string(&class_name).unwrap());
 
 }

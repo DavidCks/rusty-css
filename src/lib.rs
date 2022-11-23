@@ -93,17 +93,18 @@ pub trait Style: Reflect + Struct {
     }
 
 
-    fn as_class_string(&self, mut class_name: String) -> Result<String, &'static str> where Self: Sized {
+    fn as_class_string(&self, class_name: &String) -> Result<String, &'static str> where Self: Sized {
 
+        let mut class_name_appended = class_name.clone();
         // append pseudo-class name to the class name (i.e. .struct_ident:pseudo_class)
         let append = self.field("append");
         if !append.is_none() {
-            class_name.push_str(
+            class_name_appended.push_str(
                 append.unwrap().downcast_ref::<String>().unwrap()
             );
         }
            
-        Ok( format!(".{} {{ {}}}", class_name, self.inline()) )
+        Ok( format!(".{} {{ {}}}", class_name_appended, self.inline()) )
     }
 
     fn as_class(&self, document: &Document) -> Result<String, &'static str> where Self: Sized {
@@ -111,7 +112,7 @@ pub trait Style: Reflect + Struct {
         let class_name = self.get_struct_name().unwrap();
 
         // mount the class to the <style> element in <head>
-        let class_string = self.as_class_string(class_name.clone()).expect("Class string could not be created");
+        let class_string = self.as_class_string(&class_name).expect("Class string could not be created");
 
         let head = document.head().expect("No <head> element found in the document");
         let style_element = document.create_element("style").expect("couldn't create <style> element in this document");
