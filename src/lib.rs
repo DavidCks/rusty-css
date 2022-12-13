@@ -109,25 +109,41 @@ pub trait Style: Reflect + Struct {
 
     fn as_class(&self, document: &Document) -> Result<String, &'static str> where Self: Sized {
         
+        // get struct name as class name
         let class_name = self.get_struct_name().unwrap();
 
-        // mount the class to the <style> element in <head>
+        // create the string that is supposed to be inserted into the head as class
         let class_string = self.as_class_string(&class_name).expect("Class string could not be created");
 
+        // insert the class
+        self.append_to_head(&document, &class_name, &class_string);
+        
+        // return just the class name
+        Ok(class_name)
+    }
+
+    fn append_to_head(&self, document: &Document, class_name: &String, class_string: &String) where Self: Sized {
         let head = document.head().expect("No <head> element found in the document");
-        let style_element = document.create_element("style").expect("couldn't create <style> element in this document");
-        let style_id = format!("rusty-css-{}", class_name);
-        style_element.set_attribute("id", &style_id ).expect("couldn't set attribute of internally created style tag");
-        style_element.set_text_content(Some(&class_string));
+        let new_style_element = document.create_element("style").expect("couldn't create <style> element in this document");
+        let style_id = format!("rusty-css-{}", class_name.replace(":", "_"));
+        new_style_element.set_attribute("id", &style_id ).expect("couldn't set attribute of internally created style tag");
+        new_style_element.set_text_content(Some(&class_string));
 
         if let Some(existent_style) = head.query_selector(&format!("#{}", style_id) ).expect("an error occured while trying to fetch the element with id `rusty-css` in head") {
             head.remove_child(&existent_style).expect("couldn't remove child element with id `rusty-css` in head");
         }
 
-        head.append_child(&style_element).expect("couldn't append internally created `style` element with id `rusty-css` to head");
+        head.append_child(&new_style_element).expect("couldn't append internally created `style` element with id `rusty-css` to head");
+    }
 
-        // return just the class name
-        Ok(class_name)
+    fn add_as_pseudo_class(&self, document: &Document) where Self: Sized {
+        
+        let mut class_name = self.get_struct_name().unwrap();
+        class_name = class_name.replace("_", ":");
+
+        let class_string = self.as_class_string(&class_name).expect("Class string could not be created");
+
+        self.append_to_head(document, &class_name, &class_string);
     }
 
     fn get_struct_name(&self) -> Result<String, &'static str> where Self: Sized {
