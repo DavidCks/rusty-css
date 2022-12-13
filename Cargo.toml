@@ -7,7 +7,7 @@ license = "MIT"
 keywords = ["css", "css-in-rust", "style", "inline-style", "web"]
 categories = ["web-programming"]
 homepage = "https://github.com/DavidCks"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["David Christ <david.christ99@live.de>"]
 edition = "2021"
 
