@@ -15,6 +15,7 @@ struct NStruct {
 
 // test class string
 
+#[allow(non_camel_case_types)]
 #[derive(Reflect)]
 struct B_hover {
     prop: String,
