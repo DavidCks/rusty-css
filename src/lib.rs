@@ -36,11 +36,11 @@ pub trait Style: Reflect + Struct {
 
     // mutates a given objects fields to match a given inline css string
     fn set_from_inline_string(&mut self, style: String) -> &Self where Self: Sized {
-        let prop_value = style.split(";"); //["a: b", "c: d"]
+        let prop_value = style.split(";"); //[" a: b", " c: d"]
         prop_value.into_iter().for_each(|pv| {
             let prop_value_vec = pv.split(":").collect::<Vec<&str>>();
-            let field_name = prop_value_vec[0].replace("-", "_");
-            
+            let field_name = prop_value_vec[0].replace("-", "_").replace(" ", "");
+
             // Simple String field
             if let Some(_field) = self.get_field_mut::<String>(field_name.as_str()) {
                 *self.get_field_mut::<String>(field_name.as_str()).unwrap() = prop_value_vec[1].to_string();
