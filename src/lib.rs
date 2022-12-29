@@ -3,7 +3,7 @@
 
 //mod keywords;
 //use keywords::Pseudo;
-use bevy_reflect::{Reflect, Struct};
+use bevy_reflect::{Reflect, Struct, GetField};
 use std::num::ParseFloatError;
 use web_sys::{ Document };
 use substring::*;
@@ -33,6 +33,41 @@ pub trait Style: Reflect + Struct {
 
     // constructor
     fn create() -> Self;
+
+    // mutates a given objects fields to match a given inline css string
+    fn set_from_inline_string(&mut self, style: String) -> &Self where Self: Sized {
+        let prop_value = style.split(";"); //["a: b", "c: d"]
+        prop_value.into_iter().for_each(|pv| {
+            let prop_value_vec = pv.split(":").collect::<Vec<&str>>();
+            let field_name = prop_value_vec[0].replace("-", "_");
+            
+            // Simple String field
+            if let Some(_field) = self.get_field_mut::<String>(field_name.as_str()) {
+                *self.get_field_mut::<String>(field_name.as_str()).unwrap() = prop_value_vec[1].to_string();
+            } else 
+            
+            // Nested Struct
+            if let Some(nested_field_value) = self.field_mut(field_name.as_str()) {
+                let struct_value = prop_value_vec[1].replace(" ", "");
+                let prop_value = struct_value.split(")"); // i.e. ["skewX(20deg", "skewY(30deg"]
+                prop_value.into_iter().for_each(|pv| {
+                    let prop_value_vec = pv.split("(").collect::<Vec<&str>>(); // i.e.["skewX", "20deg"]
+                    let field_name = prop_value_vec[0].replace("-", "_");
+                    match nested_field_value.reflect_mut() {
+                        bevy_reflect::ReflectMut::Struct(nested_field_value) => {
+                            if let Some(_field) = nested_field_value.get_field::<String>(field_name.as_str()) {
+                                *nested_field_value.get_field_mut::<String>(field_name.as_str()).unwrap() = prop_value_vec[1].to_string();
+                            }
+                        },
+                        _ => {
+                            log::warn!("The given Object is only allowed to have String fields or Structs with String fields. \nGot: {:?}", &nested_field_value.get_type_info());
+                        }
+                    } 
+                });
+            }
+        });
+        self
+    }
 
     // creates a string in the form of an inline style css string
     fn inline(&self) -> String where Self: Sized {

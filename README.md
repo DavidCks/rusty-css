@@ -258,6 +258,13 @@ trait Style {
     // returns the inline css representaton of a struct
     fn inline(&self) -> String 
 
+    // Sets a structs' fields' values equivalent to the given inline css string
+    // Struct { struct_field: "value" }.set_from_inline_string("struct-field: different value");
+    // will result in:
+    // Struct { struct_field: "different value"}
+    // (also works for nested structs)
+    fn set_from_inline_string(&self, style: String) -> &Self
+
     // retruns the String Representation of a fields value
     fn create_value_string(reflect: &dyn Reflect) -> String;
 
