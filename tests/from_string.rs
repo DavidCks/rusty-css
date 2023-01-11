@@ -137,7 +137,7 @@ impl Style for DD {
 #[test]
 fn test_from_string_with_vec_struct_and_vec_of_struct() {
     let mut dd = DD::create();
-    dd.set_from_inline_string("
+    dd.set_from_inline_string(" 
         nstruct: func1(new1) func2(new2) func3(new3);
         append: new_append;
         prop: newpropval1, newpropval2, newpropval3;
