@@ -3,7 +3,7 @@
 
 //mod keywords;
 //use keywords::Pseudo;
-use bevy_reflect::{Reflect, Struct, GetField};
+use bevy_reflect::{Reflect, Struct, GetField, DynamicArray};
 use std::num::ParseFloatError;
 use web_sys::{ Document };
 use substring::*;
@@ -34,6 +34,7 @@ pub trait Style: Reflect + Struct {
     // constructor
     fn create() -> Self;
 
+
     // mutates a given objects fields to match a given inline css string
     fn set_from_inline_string(&mut self, style: String) -> &Self where Self: Sized {
         let prop_value = style.split(";"); //[" a: b", " c: d"]
@@ -45,7 +46,15 @@ pub trait Style: Reflect + Struct {
             if let Some(_field) = self.get_field_mut::<String>(field_name.as_str()) {
                 *self.get_field_mut::<String>(field_name.as_str()).unwrap() = prop_value_vec[1].to_string();
             } else 
-            
+
+            // Array
+            if let Some(_field) = self.get_field_mut::<DynamicArray>(field_name.as_str()) {
+                let value_string_vec = prop_value_vec[1].to_string().split(",").map(|v| {
+                    v.to_string()  
+                }).collect::<Vec<String>>();
+                *self.get_field_mut::<DynamicArray>(field_name.as_str()).unwrap() = DynamicArray::from_vec(value_string_vec);
+            } else
+
             // Nested Struct
             if let Some(nested_field_value) = self.field_mut(field_name.as_str()) {
                 let struct_value = prop_value_vec[1].replace(" ", "");
@@ -118,7 +127,20 @@ pub trait Style: Reflect + Struct {
                     let value_string = format!(" {function}({parameter})", function = &function_name, parameter = &function_param);
                     value.push_str(&value_string);
                 }
-            }
+            },
+            bevy_reflect::ReflectRef::Array(arr) => {
+                //loop over the vector                    
+                for (i, value_reflect) in arr.iter().enumerate() {
+                    // dont set the leading comma if its the first element
+                    let mut comma = "".to_string();
+                    if i != 0 {
+                        comma = ",".to_string();
+                    }
+
+                    let value_string = format!("{comma}{value}", value = Self::create_value_string(value_reflect), comma = comma);
+                    value.push_str(&value_string);
+                }
+            },
             _ => {
                 log::warn!("The given Object is only allowed to have String fields or Structs with String fields. \nGot: {:?}", &reflect.get_type_info());
             }
