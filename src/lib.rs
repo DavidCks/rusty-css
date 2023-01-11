@@ -3,7 +3,7 @@
 
 //mod keywords;
 //use keywords::Pseudo;
-use bevy_reflect::{Reflect, Struct, GetField, DynamicArray};
+use bevy_reflect::{Reflect, Struct, GetField, DynamicStruct, ReflectRef, ReflectMut, DynamicArray, Array};
 use std::num::ParseFloatError;
 use web_sys::{ Document };
 use substring::*;
@@ -34,6 +34,63 @@ pub trait Style: Reflect + Struct {
     // constructor
     fn create() -> Self;
 
+    fn set_string_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
+        *self.get_field_mut::<String>(field_name).unwrap() = value.to_string();
+    } 
+
+    fn set_list_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
+        if let Some(string_vec) = self.get_field_mut::<Vec<String>>(field_name) {
+            let string_vec_value = value.split(",").map(|v| {
+                v.to_string()  
+            }).collect::<Vec<String>>();
+            *string_vec = string_vec_value;
+        } else {
+            println!("AAAAA");
+        }
+    }
+
+    // fn set_array_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
+    //     if let ReflectMut::Array(string_arr) = self.field_mut(field_name).unwrap().reflect_mut() {
+    //         let string_arr_value = value.split(",").map(|v| {
+    //             v.to_string()  
+    //         }).collect::<Vec<String>>();
+    //         *string_arr = Array::(string_arr_value);
+    //     } else {
+    //         println!("AAAAA");
+    //     }
+    // }
+
+    fn set_struct_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
+        // extract name of the first field of the struct from css
+        let value = value.replace(" ", ""); // "linear-gradient(rgb(1,2,3))skewY(30deg)"
+        let func_rest= value.split_once("(").unwrap(); // i.e. 0: "linear-gradient", 1: "rgb(1,2,3))skewY(30deg)"]
+        let func_name = func_rest.0;
+
+        // get the nested struct
+        if let ReflectMut::Struct(nested_struct_reflect) = self.field_mut(field_name).unwrap().reflect_mut() {
+            let nested_struct_field = nested_struct_reflect.field_mut(func_name).unwrap();
+            match nested_struct_field.reflect_mut() {
+
+                // Struct { Field: Nested_Struct { Nested_Field: String, <Nested_field_n: String> }}
+                ReflectMut::Value(nested_srtruct_field_value_ref) => {
+                    let new_value = func_rest.1.split_once(")").unwrap(); // "10deg)" -> 10deg
+                    *nested_srtruct_field_value_ref.downcast_mut::<String>().unwrap() = new_value.0.to_string();
+                    
+                    // recurse if the css still has move funcs next to each other (e.g. skewX(20deg) >skewY(30deg)< ) 
+                    if !new_value.1.is_empty() {
+                        self.set_struct_reflect(field_name, new_value.1);
+                    }
+                }
+                ReflectMut::Struct(_) => todo!(),
+                ReflectMut::TupleStruct(_) => todo!(),
+                ReflectMut::Tuple(_) => todo!(),
+                ReflectMut::List(_) => todo!(),
+                ReflectMut::Array(_) => todo!(),
+                ReflectMut::Map(_) => todo!(),
+                ReflectMut::Enum(_) => todo!(),
+            }
+        }
+    }
 
     // mutates a given objects fields to match a given inline css string
     fn set_from_inline_string(&mut self, style: String) -> &Self where Self: Sized {
@@ -42,38 +99,48 @@ pub trait Style: Reflect + Struct {
             let prop_value_vec = pv.split(":").collect::<Vec<&str>>();
             let field_name = prop_value_vec[0].replace("-", "_").replace(" ", "");
 
-            // Simple String field
-            if let Some(_field) = self.get_field_mut::<String>(field_name.as_str()) {
-                *self.get_field_mut::<String>(field_name.as_str()).unwrap() = prop_value_vec[1].to_string();
-            } else 
+            // if the prop name corresponds to a field name
+            if let Some(field) = self.field(&field_name) {
+                // if the field is of type String
+                match field.reflect_ref() {
+                    ReflectRef::Value(_) => {
+                        self.set_string_reflect(&field_name, prop_value_vec[1])
+                    }
+                    ReflectRef::Struct(_) => {
+                        self.set_struct_reflect(&field_name, prop_value_vec[1])
+                    },
+                    ReflectRef::List(_) => {
+                        self.set_list_reflect(&field_name, prop_value_vec[1])
+                    },
+                    ReflectRef::Array(_) => {},
 
-            // Array
-            if let Some(_field) = self.get_field_mut::<DynamicArray>(field_name.as_str()) {
-                let value_string_vec = prop_value_vec[1].to_string().split(",").map(|v| {
-                    v.to_string()  
-                }).collect::<Vec<String>>();
-                *self.get_field_mut::<DynamicArray>(field_name.as_str()).unwrap() = DynamicArray::from_vec(value_string_vec);
-            } else
-
-            // Nested Struct
-            if let Some(nested_field_value) = self.field_mut(field_name.as_str()) {
-                let struct_value = prop_value_vec[1].replace(" ", "");
-                let prop_value = struct_value.split(")"); // i.e. ["skewX(20deg", "skewY(30deg"]
-                prop_value.into_iter().for_each(|pv| {
-                    let prop_value_vec = pv.split("(").collect::<Vec<&str>>(); // i.e.["skewX", "20deg"]
-                    let field_name = prop_value_vec[0].replace("-", "_");
-                    match nested_field_value.reflect_mut() {
-                        bevy_reflect::ReflectMut::Struct(nested_field_value) => {
-                            if let Some(_field) = nested_field_value.get_field::<String>(field_name.as_str()) {
-                                *nested_field_value.get_field_mut::<String>(field_name.as_str()).unwrap() = prop_value_vec[1].to_string();
-                            }
-                        },
-                        _ => {
-                            log::warn!("The given Object is only allowed to have String fields or Structs with String fields. \nGot: {:?}", &nested_field_value.get_type_info());
-                        }
-                    } 
-                });
+                    ReflectRef::TupleStruct(_) => {},
+                    ReflectRef::Tuple(_) => {},
+                    ReflectRef::Map(_) => {},
+                    ReflectRef::Enum(_) => {},
+                }  
             }
+
+            // // Simple String field
+            // if let Some(_field) = self.get_field::<String>(field_name.as_str()) {
+            //     self.set_string_reflect(field_name, prop_value_vec[1].to_string());
+            // } else 
+
+            // // Array
+            // if let Some(_field) = self.get_field::<DynamicArray>(field_name.as_str()) {
+            //     self.set_array_reflect(field_name, prop_value_vec[1].to_string());
+            // } else
+
+            // // Nested Struct
+            // if let Some(_field) = self.get_field::<DynamicStruct>(field_name.as_str()) {
+            //     self.set_struct_reflect(field_name, prop_value_vec[1].to_string());
+            // } else 
+            
+            // // Either it's not a part of Self or it's not a Struct, Array or String
+            // {
+            //     let field = self.field(field_name.as_str());
+            //     println!("!{:?}", field.unwrap().get_type_info());
+            // }
         });
         self
     }

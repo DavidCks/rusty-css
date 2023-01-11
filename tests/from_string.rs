@@ -1,15 +1,20 @@
-use std::{collections::LinkedList, iter::Map};
-
 use rusty_css::*;
-use bevy_reflect::{ Reflect, DynamicList, DynamicArray, List, FromReflect };
+use bevy_reflect::{ Reflect, FromReflect };
 
-#[derive(Reflect, PartialEq, Debug)]
+#[derive(Reflect, FromReflect, PartialEq, Debug)]
 struct NStruct {
     func1: String,
     func2: String,
 }
 
-#[derive(Reflect, PartialEq, Debug)]
+#[derive(Reflect, FromReflect, PartialEq, Debug)]
+struct NStruct2 {
+    func1: String,
+    func2: String,
+    func3: String,
+}
+
+#[derive(Reflect, FromReflect, PartialEq, Debug)]
 struct BB {
     append: String,
     prop_with_underscore: String,
@@ -66,17 +71,17 @@ fn test_from_string() {
 }
 
 
-#[derive(Reflect, PartialEq, Debug)]
+#[derive(Reflect, FromReflect, PartialEq, Debug)]
 struct CC {
     append: String,
-    prop: [String; 3],
+    prop: Vec<String>,
 }
 
 impl Style for CC {
     fn create() -> Self {
         Self {
             append: ":arbitrary_name".to_string(),
-            prop: [
+            prop: vec![
                 "200px".to_string(),
                 "400px".to_string(),
                 "600px".to_string(),
@@ -86,122 +91,72 @@ impl Style for CC {
 }
 
 #[test]
-fn test_from_string_with_array() {
+fn test_from_string_with_vec() {
     let mut cc = CC::create();
-    cc.set_from_inline_string("prop: newpropval1, newpropval1, newpropval1;".to_string());
+    cc.set_from_inline_string("prop: newpropval1, newpropval2, newpropval3;".to_string());
 
     let mut newcc= CC::create();
-    newcc.prop = [
-        "200px".to_string(),
-        "400px".to_string(),
-        "600px".to_string(),
+    newcc.prop = vec![
+        " newpropval1".to_string(),
+        " newpropval2".to_string(),
+        " newpropval3".to_string(),
     ];
 
 
     assert_eq!(cc, newcc);
 }
 
-#[derive(Reflect, PartialEq, Debug)]
+#[derive(Reflect, FromReflect, PartialEq, Debug)]
 struct DD {
     append: String,
+    nstruct: NStruct2,
     prop: Vec<String>,
+    prop2: Vec<NStruct>,
 }
 
 impl Style for DD {
     fn create() -> Self {
         Self {
             append: ":arbitrary_name".to_string(),
+            nstruct: NStruct2 { func1: "NStopf1".to_string(), func2: "NStopf2".to_string(), func3: "NStopf3".to_string(), },
             prop: vec!(
                 "str1".to_string(), 
                 "str2".to_string(),
                 "str3".to_string(),
-            )
+            ),
+            prop2: vec![
+                NStruct { func1: "NS1f1".to_string(), func2: "NS1f2".to_string(), },
+                NStruct { func1: "NS2f1".to_string(), func2: "NS2f2".to_string(), }
+            ]
         }
     }
 }
 
+
+
 #[test]
-fn test_from_string_with_vec() {
+fn test_from_string_with_vec_struct_and_vec_of_struct() {
     let mut dd = DD::create();
-    dd.set_from_inline_string("prop: newpropval1, newpropval1, newpropval1;".to_string());
+    dd.set_from_inline_string("
+        nstruct: func1(new1) func2(new2) func3(new3);
+        append: new_append;
+        prop: newpropval1, newpropval2, newpropval3;
+        prop2: func1(1deg) func2(2deg), func1(3deg) func2(4deg)".to_string());
 
     let mut newdd= DD::create();
     newdd.prop = vec!(
-        "str1".to_string(),
-        "str2".to_string(),
-        "str3".to_string(),
+        " newpropval1".to_string(),
+        " newpropval2".to_string(),
+        " newpropval3".to_string(),
     );
+    newdd.append = " new_append".to_string();
+    newdd.nstruct = NStruct2 { func1: "new1".to_string(), func2: "new2".to_string(), func3: "new3".to_string()};
+    newdd.prop2 = vec![
+        NStruct { func1: "1deg".to_string(), func2: "2deg".to_string(), },
+        NStruct { func1: "3deg".to_string(), func2: "4deg".to_string(), }
+    ];
 
 
     assert_eq!(dd, newdd);
 }
 
-// mega struct
-#[derive(Reflect, FromReflect, PartialEq, Debug)]
-struct MegaNStruct3 {
-    f1: Vec<String>
-}
-
-#[derive(Reflect, PartialEq, Debug)]
-struct MegaNStruct2 {
-    func_nested_1: Vec<MegaNStruct3>
-}
-
-#[derive(Reflect, PartialEq, Debug)]
-struct Mega {
-    nested: MegaNStruct2,
-}
-
-impl Style for Mega {
-    fn create() -> Self {
-        Self {
-            nested: MegaNStruct2 { 
-                func_nested_1: vec![
-                    MegaNStruct3 { 
-                        f1: vec![
-                            "p4".to_string(),
-                            "p5".to_string(),
-                            "p6".to_string(),
-                        ] 
-                    },
-                    MegaNStruct3 { 
-                        f1: vec![
-                            "p1".to_string(),
-                            "p2".to_string(),
-                            "p3".to_string(),
-                        ] 
-                    }
-                ]
-            }
-        }
-    }
-}
-
-#[test]
-fn test_from_string_including_all() {
-    let mut mega = Mega::create();
-    mega.set_from_inline_string("nested: func-nested-1(f1(v4,v5,v6), f1(v1, v2, v3));".to_string());
-
-    let new_mega = Mega {
-        nested: MegaNStruct2 { 
-            func_nested_1: vec![
-                MegaNStruct3 { 
-                    f1: vec![
-                        "v4".to_string(),
-                        "v5".to_string(),
-                        "v6".to_string(),
-                    ] 
-                },
-                MegaNStruct3 { 
-                    f1: vec![
-                        "v1".to_string(),
-                        "v2".to_string(),
-                        "v3".to_string(),
-                    ] 
-                }
-            ]
-        }
-    };
-
-    assert_eq!(mega, new_mega);
-}
