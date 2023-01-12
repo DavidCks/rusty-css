@@ -7,7 +7,7 @@ license = "MIT"
 keywords = ["css", "css-in-rust", "style", "inline-style", "web"]
 categories = ["web-programming"]
 homepage = "https://github.com/DavidCks"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["David Christ <david.christ99@live.de>"]
 edition = "2021"
 
@@ -29,6 +29,7 @@ wasm-bindgen = "0.2.38"
 bevy_reflect = "0.9.1"
 wasm-bindgen-test = "0.3.0"
 substring = "1.4.5"
+regex = "1.7.1"
 
 
 

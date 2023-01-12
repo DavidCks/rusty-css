@@ -3,10 +3,11 @@
 
 //mod keywords;
 //use keywords::Pseudo;
-use bevy_reflect::{Reflect, Struct, GetField, DynamicStruct, ReflectRef, ReflectMut, DynamicArray, Array};
+use bevy_reflect::{Reflect, Struct, ReflectMut, List};
 use std::num::ParseFloatError;
 use web_sys::{ Document };
 use substring::*;
+use regex::Regex;
 
 // add a smart way to extract the containing float value within a string 
 pub trait ExtractNums {
@@ -34,18 +35,38 @@ pub trait Style: Reflect + Struct {
     // constructor
     fn create() -> Self;
 
-    fn set_string_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
-        *self.get_field_mut::<String>(field_name).unwrap() = value.to_string();
+    fn set_string_reflect(string_reflect: &mut dyn Reflect, value: &str) where Self: Sized {
+        *string_reflect.downcast_mut::<String>().unwrap() = value.to_string();
     } 
 
-    fn set_list_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
-        if let Some(string_vec) = self.get_field_mut::<Vec<String>>(field_name) {
+    fn set_list_reflect(list_reflect: &mut dyn List, value: &str) where Self: Sized {
+        if let Some(string_vec) = list_reflect.as_reflect_mut().downcast_mut::<Vec<String>>() {
             let string_vec_value = value.split(",").map(|v| {
                 v.to_string()  
             }).collect::<Vec<String>>();
             *string_vec = string_vec_value;
         } else {
-            println!("AAAAA");
+            // value = prop: Vec<Struct{r: Vec<str>, g: Vec<str>, b: <str>}> /=/ r(4,5,6) g(7,8,9) b(10,11,12), r(1,2,3) g(1,2,3) b(1,2,3)
+            // value = prop: Vec<Struct{a: Struct{aa: str ab: Vec<str>}} /=/  a(aa(10deg) ab(1,2,3)), a(aa(20deg) ab(3,5,6)) 
+            // only relevant if its a Vec<Struct>
+            let new_structs_values = value
+                .split_inclusive("),") // split value string into respective vec elements 
+                .map(|s| { s.strip_suffix(",").unwrap_or(s) }) // strip leading comma if its there
+                .collect::<Vec<&str>>();
+            for i in 0..list_reflect.len() {
+                match list_reflect.get_mut(i).unwrap().reflect_mut() {
+                    ReflectMut::Struct(struct_reflect) => {
+                        Self::set_struct_reflect(struct_reflect, new_structs_values[i]);
+                    }
+                    ReflectMut::TupleStruct(_) => todo!(),
+                    ReflectMut::Tuple(_) => todo!(),
+                    ReflectMut::List(_) => todo!(),
+                    ReflectMut::Array(_) => todo!(),
+                    ReflectMut::Map(_) => todo!(),
+                    ReflectMut::Enum(_) => todo!(),
+                    ReflectMut::Value(_) => todo!(),
+                }
+            }
         }
     }
 
@@ -57,37 +78,54 @@ pub trait Style: Reflect + Struct {
     //         *string_arr = Array::(string_arr_value);
     //     } else {
     //         println!("AAAAA");
-    //     }
+    //     }n
     // }
 
-    fn set_struct_reflect(&mut self, field_name: &str, value: &str) where Self: Sized {
+    fn set_struct_reflect(struct_reflect: &mut dyn Struct, value: &str) where Self: Sized {
         // extract name of the first field of the struct from css
-        let value = value.replace(" ", ""); // "linear-gradient(rgb(1,2,3))skewY(30deg)"
-        let func_rest= value.split_once("(").unwrap(); // i.e. 0: "linear-gradient", 1: "rgb(1,2,3))skewY(30deg)"]
-        let func_name = func_rest.0;
+        let value = value.replace(" ", ""); // "linear-gradient(rgb(1,2,3)),skewY(30deg)rgba(...)"
+        let func_rest= value.split_once("("); // i.e. 0: "linear-gradient", 1: "rgb(#dadafe)),skewY(30deg)"]
+        if func_rest.is_none() { 
+            let warn_msg = format!("    rusty-css:\n    Warning: parsing for the struct \n{:?}\n failed. \n    There might be some missplaced parentheses.", struct_reflect.get_type_info());
+            log::warn!("{}", warn_msg); println!("{}", warn_msg); 
+            return; 
+        }
+        let func_rest = func_rest.unwrap();
+        let func_name = &func_rest.0.replace("_","-");
 
-        // get the nested struct
-        if let ReflectMut::Struct(nested_struct_reflect) = self.field_mut(field_name).unwrap().reflect_mut() {
-            let nested_struct_field = nested_struct_reflect.field_mut(func_name).unwrap();
+        if let Some(nested_struct_field) = struct_reflect.field_mut(func_name) {
+            let new_value: (&str, &str);
             match nested_struct_field.reflect_mut() {
-
-                // Struct { Field: Nested_Struct { Nested_Field: String, <Nested_field_n: String> }}
-                ReflectMut::Value(nested_srtruct_field_value_ref) => {
-                    let new_value = func_rest.1.split_once(")").unwrap(); // "10deg)" -> 10deg
-                    *nested_srtruct_field_value_ref.downcast_mut::<String>().unwrap() = new_value.0.to_string();
-                    
-                    // recurse if the css still has move funcs next to each other (e.g. skewX(20deg) >skewY(30deg)< ) 
-                    if !new_value.1.is_empty() {
-                        self.set_struct_reflect(field_name, new_value.1);
-                    }
+                // Struct { Field: Nested_Struct { Nested_Field: Vec<String>, <Nested_field_n: String || Vec<String> }}
+                ReflectMut::List(nested_srtruct_field_list_ref) => {
+                    new_value = func_rest.1.split_once(")").unwrap(); // "10deg,20deg,30deg)skewY(...)" -> 0: "10deg, 20deg, 30deg", 1: "skewY(...)" 
+                    Self::set_list_reflect(nested_srtruct_field_list_ref, new_value.0);
                 }
-                ReflectMut::Struct(_) => todo!(),
+                ReflectMut::Struct(nested_srtruct_field_struct_ref) => {
+                    // func_rest.1 = "rgba(10deg,20deg,30deg))whatever(...)"
+                    let split_at = Regex::new(r"\)\)([a-zA-Z_-]|$)").unwrap(); //matches "))a, ))b, etc." or "))"
+                    let split_pos = split_at.find(func_rest.1).unwrap(); 
+                    let new_val_left = func_rest.1.split_at(split_pos.start() + 1_usize).0;
+                    let mut new_val_right = func_rest.1.split_at(split_pos.end() - 1_usize).1;
+                    if new_val_right == ")" { new_val_right = "" } // remove right side string if the previous value was at the end of the string
+                    new_value = (new_val_left, new_val_right); // "rgba(10deg,20deg,30deg))whatever(...)" -> 0: "rgba(10deg,20deg,30deg)", 1: "whatever(...)"
+                    Self::set_struct_reflect(nested_srtruct_field_struct_ref, new_value.0);
+                },
                 ReflectMut::TupleStruct(_) => todo!(),
                 ReflectMut::Tuple(_) => todo!(),
-                ReflectMut::List(_) => todo!(),
                 ReflectMut::Array(_) => todo!(),
                 ReflectMut::Map(_) => todo!(),
                 ReflectMut::Enum(_) => todo!(),
+                // Struct { Field: Nested_Struct { Nested_Field: String, <Nested_field_n: String || Vec<String>> }}
+                ReflectMut::Value(nested_srtruct_field_value_ref) => {
+                    new_value = func_rest.1.split_once(")").unwrap(); // "10deg)" -> 10deg
+                    *nested_srtruct_field_value_ref.downcast_mut::<String>().unwrap() = new_value.0.to_string();
+                }
+            }
+
+            // recurse if the css still has move funcs next to each other (e.g. skewX(20deg) >skewY(30deg)< ) 
+            if !new_value.1.is_empty() && !new_value.1.starts_with(",") {
+                Self::set_struct_reflect(struct_reflect, new_value.1);
             }
         }
     }
@@ -97,27 +135,26 @@ pub trait Style: Reflect + Struct {
         let prop_value = style.split(";"); //[" a: b", " c: d"]
         prop_value.into_iter().for_each(|pv| {
             let prop_value_vec = pv.split(":").collect::<Vec<&str>>();
-            let field_name = prop_value_vec[0].replace("-", "_").replace(" ", "");
+            let field_name = prop_value_vec[0].replace("-", "_").replace(" ", "").replace("\n", "");
 
             // if the prop name corresponds to a field name
-            if let Some(field) = self.field(&field_name) {
+            if let Some(field) = self.field_mut(&field_name) {
                 // if the field is of type String
-                match field.reflect_ref() {
-                    ReflectRef::Value(_) => {
-                        self.set_string_reflect(&field_name, prop_value_vec[1])
+                match field.reflect_mut() {
+                    ReflectMut::Struct(struct_reflect) => {
+                        Self::set_struct_reflect(struct_reflect, prop_value_vec[1])
+                    },
+                    ReflectMut::List(list_reflect) => {
+                        Self::set_list_reflect(list_reflect, prop_value_vec[1])
+                    },
+                    ReflectMut::Array(_) => todo!(),
+                    ReflectMut::TupleStruct(_) => todo!(),
+                    ReflectMut::Tuple(_) => todo!(),
+                    ReflectMut::Map(_) => todo!(),
+                    ReflectMut::Enum(_) => todo!(),
+                    ReflectMut::Value(string_reflect) => {
+                        Self::set_string_reflect(string_reflect, prop_value_vec[1])
                     }
-                    ReflectRef::Struct(_) => {
-                        self.set_struct_reflect(&field_name, prop_value_vec[1])
-                    },
-                    ReflectRef::List(_) => {
-                        self.set_list_reflect(&field_name, prop_value_vec[1])
-                    },
-                    ReflectRef::Array(_) => {},
-
-                    ReflectRef::TupleStruct(_) => {},
-                    ReflectRef::Tuple(_) => {},
-                    ReflectRef::Map(_) => {},
-                    ReflectRef::Enum(_) => {},
                 }  
             }
 

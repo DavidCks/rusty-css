@@ -32,13 +32,14 @@ regardless of the property names' or values' validity. If you have an error in y
 
 ### Roadmap
 
-- [x] simple conversion from rust structs to inline css code
+- [x] rendering rust structs to inline css code
+    - [x] support for deep nesting
+- [x] setting the values of a struct from inline css
 - [ ] more reliable extraction of numeric values inside of a String
-- [x] exporting structs as classes inside a style sheet
+- [x] support for classes
     - [ ] support for queries
-    - [ ] make exporting classes less boilerplate-y
 - [ ] validating the written css code at compile time
-    - [ ] automated implementation according to the css spec 
+    - [ ] automated implementation of a default style struct according to the css spec 
 - [ ] second layer implementation of a system with strict typing 
 (such as enums for all possible units for a given property)
 - [ ] more abstraction for less boilderplate
@@ -242,6 +243,132 @@ fn view(&self, ctx: &Context<Self>) -> Html {
     }
 }
 ```
+### Supported types
+these structs will be used as an example for nested structs
+```rust
+#[derive(Reflect, FromReflect)]
+struct EvenFurtherNestedStruct {
+    further_vec_field: Vec<String>,
+}
+
+#[derive(Reflect, FromReflect)]
+struct NestedStruct {
+    nested_vec_field: Vec<String>,
+    nested_string_field: String,
+    nested_struct_field: EvenFurtherNestedStruct,
+}
+```
+Note that if you want to use a vec of structs the structs have to derive `FromReflect` in addition to just `Reflect`
+```rust
+#[derive(Reflect)]
+struct Struct {
+    string_field: String, 
+    //string-field: String;
+
+    struct_field: NestedStruct, 
+    //struct-field: 
+    //    nested-string-field(String)
+    //    nested-vec-field(
+    //        String1,
+    //        String2,
+    //        String3,
+    //        String...
+    //    )
+    //    nested-struct-field(
+    //        further-vec-field(
+    //            String1,
+    //            String2,
+    //            String...
+    //        )
+    //    )
+    //; 
+
+    vec_field_string: Vec<String>, 
+    //vec-field-string: String1, String2, String...;
+
+    vec_field_struct: Vec<NestedStruct>, //
+}   //vec_field_struct: 
+    //    nested-string-field(String)
+    //    nested-vec-field(...)
+    //    nested-struct-field(...)
+    //    ,
+    //     nested-string-field(String)
+    //    nested-vec-field(...)
+    //    nested-struct-field(...)
+    //    ,
+    //    ...
+    //;
+``` 
+
+The nesting can be helpful when you want to implement something like a gradient background:
+```css 
+background-image: radial-gradient(rgb(0,46,255), rgb(0,255,64), rgb(255,255,0));
+```
+Implementing something like this manually in a way where you have immediate access to the values in rust could look like this:
+```rust
+#[derive(Reflect, FromReflect)]
+struct RGB {
+    rgb: Vec<String>
+}
+
+
+#[derive(Reflect)]
+struct RG {
+    radial_gradient: Vec<RGB>
+}
+
+
+#[derive(Reflect)]
+struct BG {
+    background_image: RG,
+}
+
+impl Style for BG {
+    fn create() -> Self {
+        Self {
+            background_image: RG {
+                radial_gradient: vec![
+                    RGB { 
+                        rgb: vec![
+                            "0".to_string(), 
+                            "46".to_string(), 
+                            "255".to_string()
+                        ]
+                    }, 
+                    RGB { 
+                        rgb: vec![
+                            "0".to_string(), 
+                            "255".to_string(), 
+                            "64".to_string()
+                        ]
+                    }, 
+                    RGB { 
+                        rgb: vec![
+                            "255".to_string(), 
+                            "255".to_string(), 
+                            "0".to_string()
+                        ]
+                    }, 
+                ]
+            }
+        }
+    }
+}
+```
+
+If you were to do it like this you could access individual values like so:
+```rust
+fn main() {
+    let bg = BG::create(); // create struct
+    let rgbs = bg.background_image.radial_gradient; // get vec of rgbs
+    let first_color = rgbs[0] // get the first color of the gradient
+    first_color[0] = 255 // change the value of the red channel of the first color of the gradient
+}
+```
+
+### Fetching values directly from css
+
+You can also set the values of any of the structs above from a string of css `prop1: value1; prop2: value2; ...` pairs using the `set_from_inline_string()` method. You'll have to be careful to match the css string to your structs structure however. For examples you can go take a look at the `tests/from_string.rs` file.
 
 ### Crate implements:
 
@@ -265,9 +392,6 @@ trait Style {
     // (also works for nested structs)
     fn set_from_inline_string(&self, style: String) -> &Self
 
-    // retruns the String Representation of a fields value
-    fn create_value_string(reflect: &dyn Reflect) -> String;
-
     // - returns the class name to put into the class attribute
     // - inserts the style as a class into the style sheet
     fn as_class(&mut self, document: &Document) -> Result<String, &'static str> ;
@@ -280,6 +404,20 @@ trait Style {
 
     // logs the Reflects of the given objects fields to the browser console with wasm_logger 
     fn debug(self) -> Self;
+
+    //----------internal funcs----------//
+
+    // retruns the String Representation of a fields value
+    fn create_value_string(reflect: &dyn Reflect) -> String;
+
+    // sets the value of a String field to the value side of a property in a css string (e.g. prop: >value<)
+    fn set_string_reflect(string_reflect: &mut dyn Reflect, value: &str);
+
+    // sets the value of a Struct field to the value side of a property in a css string (e.g. prop: >field(value)<)
+    fn set_struct_reflect(struct_reflect: &mut dyn Struct, value: &str);
+
+    // sets the value of a Vec (bevy_reflect Lists in general) field to the value side of a property in a css string (e.g. prop: >1,2,3,4<)
+    fn set_list_reflect(list_reflect: &mut dyn List, value: &str)
 }
 ```
 
