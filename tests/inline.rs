@@ -51,7 +51,7 @@ impl Style for B {
 #[test]
 fn test2(){
     let b = B::create();
-    assert_eq!(b.inline(), "prop: 200px; nested: func1( func_prop1) func2( func_prop2); ");
+    assert_eq!(b.inline(), "prop: 200px; nested:  func1(func_prop1) func2(func_prop2); ");
 }
 
 // with nested struct and array 
@@ -66,7 +66,7 @@ struct NCStruct {
 struct C {
     prop: String,
     nested: NCStruct,
-    array: [String; 3],
+    array: Vec<String>,
 }
     
 impl Style for C {
@@ -77,7 +77,7 @@ impl Style for C {
                 func1: "func_prop1".to_string(), 
                 func2: "func_prop2".to_string(),
             },
-            array: ["firststr".to_string(), "secondstr".to_string(), "thirdstr".to_string()]
+            array: vec!["firststr".to_string(), "secondstr".to_string(), "thirdstr".to_string()]
         }
     }
 }
@@ -85,7 +85,7 @@ impl Style for C {
 #[test]
 fn test3(){
     let c = C::create();
-    assert_eq!(c.inline(), "prop: 200px; nested: func1( func_prop1) func2( func_prop2); array: firststr, secondstr, thirdstr; ");
+    assert_eq!(c.inline(), "prop: 200px; nested:  func1(func_prop1) func2(func_prop2); array: firststr, secondstr, thirdstr; ");
 }
 
 // with nested struct and array in a nested struct
@@ -93,14 +93,14 @@ fn test3(){
 #[derive(Reflect)]
 struct NDStruct {
     func1: String,
-    func2: [String; 4],
+    func2: Vec<String>
 }
 
 #[derive(Reflect)]
 struct D {
     prop: String,
     nested: NDStruct,
-    array: [String; 3],
+    array: Vec<String>,
 }
     
 impl Style for D {
@@ -109,14 +109,14 @@ impl Style for D {
             prop: "200px".to_string(),
             nested: NDStruct { 
                 func1: "func_prop1".to_string(), 
-                func2: [
+                func2: vec![
                     "func_prop2_vec_1".to_string(),
                     "func_prop2_vec_2".to_string(),
                     "func_prop2_vec_3".to_string(),
                     "func_prop2_vec_4".to_string(),
                 ],
             },
-            array: [
+            array: vec![
                 "firststr".to_string(), 
                 "secondstr".to_string(), 
                 "thirdstr".to_string()
@@ -128,5 +128,5 @@ impl Style for D {
 #[test]
 fn test4(){
     let d = D::create();
-    assert_eq!(d.inline(), "prop: 200px; nested: func1( func_prop1) func2( func_prop2_vec_1, func_prop2_vec_2, func_prop2_vec_3, func_prop2_vec_4); array: firststr, secondstr, thirdstr; ");
+    assert_eq!(d.inline(), "prop: 200px; nested:  func1(func_prop1) func2(func_prop2_vec_1, func_prop2_vec_2, func_prop2_vec_3, func_prop2_vec_4); array: firststr, secondstr, thirdstr; ");
 }

@@ -30,7 +30,7 @@ impl Style for B {
 #[test]
 fn test_standard_class_string_export (){
     let b = B::create();
-    assert_eq!(b.as_class_string( &b.get_struct_name().unwrap() ).unwrap(), ".B { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
+    assert_eq!(b.as_class_string( &b.get_struct_name().unwrap() ).unwrap(), ".B { prop: 200px; nested:  func1(func_prop1) func2(func_prop2); }");
 }
 
 // test class string with pseudo classes 1
@@ -58,7 +58,7 @@ impl Style for BA {
 #[test]
 fn test_class_string_export_with_pseudo_classes_1 (){
     let b = BA::create();
-    assert_eq!(b.as_class_string( &b.get_struct_name().unwrap() ).unwrap(), ".BA:before { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
+    assert_eq!(b.as_class_string( &b.get_struct_name().unwrap() ).unwrap(), ".BA:before { prop: 200px; nested:  func1(func_prop1) func2(func_prop2); }");
 }
 
 
@@ -87,5 +87,5 @@ impl Style for BB {
 #[test]
 fn test_class_string_export_with_pseudo_classes_2 (){
     let b = BB::create();
-    assert_eq!(b.as_class_string( &b.get_struct_name().unwrap() ).unwrap(), ".BB:arbitrary_name { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
+    assert_eq!(b.as_class_string( &b.get_struct_name().unwrap() ).unwrap(), ".BB:arbitrary_name { prop: 200px; nested:  func1(func_prop1) func2(func_prop2); }");
 }

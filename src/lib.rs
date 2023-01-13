@@ -206,7 +206,7 @@ pub trait Style: Reflect + Struct {
                     //function names like skewX, skewY, etc.
                     let function_name = fields.name_at(i).unwrap().replace("_", "-");
                     let function_param = Self::create_value_string(value_reflect);
-                    let value_string = format!("{function}({parameter})", function = &function_name, parameter = &function_param);
+                    let value_string = format!(" {function}({parameter})", function = &function_name, parameter = &function_param);
                     value.push_str(&value_string);
                 }
             },
