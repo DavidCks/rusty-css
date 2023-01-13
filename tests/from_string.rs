@@ -23,6 +23,8 @@ struct NstructWithVecsStringsAndStructs {
     struc: NStruct,
 }
 
+// String & Struct Test
+
 #[derive(Reflect, PartialEq, Debug)]
 struct BB {
     append: String,
@@ -63,7 +65,7 @@ fn test_from_string_with_underscore() {
     bb.set_from_inline_string("prop-with-underscore: new_underscore_val;".to_string());
 
     let mut newbb = BB::create();
-    newbb.prop_with_underscore = " new_underscore_val".to_string(); 
+    newbb.prop_with_underscore = "new_underscore_val".to_string(); 
 
     assert_eq!(bb, newbb);
 }
@@ -74,11 +76,12 @@ fn test_from_string() {
     bb.set_from_inline_string("prop: newpropval;".to_string());
 
     let mut newbb = BB::create();
-    newbb.prop = " newpropval".to_string(); 
+    newbb.prop = "newpropval".to_string(); 
 
     assert_eq!(bb, newbb);
 }
 
+// Vec Test
 
 #[derive(Reflect, PartialEq, Debug)]
 struct CC {
@@ -106,14 +109,72 @@ fn test_from_string_with_vec() {
 
     let mut newcc= CC::create();
     newcc.prop = vec![
-        " newpropval1".to_string(),
-        " newpropval2".to_string(),
-        " newpropval3".to_string(),
+        "newpropval1".to_string(),
+        "newpropval2".to_string(),
+        "newpropval3".to_string(),
     ];
 
 
     assert_eq!(cc, newcc);
 }
+
+// Tuple Test
+
+#[derive(Reflect, FromReflect, PartialEq, Debug)]
+struct RGBT {
+    rgb: Vec<String>,
+}
+
+#[derive(Reflect, PartialEq, Debug)]
+struct BG {
+    linear_gradient: Vec<(RGBT, String, String)>,
+}
+
+#[derive(Reflect, PartialEq, Debug)]
+struct StructWithVecOfTupleOfNStructAndTuple {
+    border: (String, String, String),
+    background_image: BG,
+}
+
+
+impl Style for StructWithVecOfTupleOfNStructAndTuple {
+    fn create() -> Self {
+        Self {
+            border: ("thick".to_string(), "double".to_string(), "#32a1ce".to_string()),
+            background_image: BG { 
+                linear_gradient: vec![
+                    (
+                        RGBT {
+                            rgb: vec!["1".to_string(), "2".to_string(), "3".to_string()],
+                        }, 
+                        "0%".to_string(), 
+                        "50%".to_string()
+                    )
+                ] 
+            }
+        }
+    }
+}
+
+#[test]
+fn test_from_string_with_tuple() {
+    let mut tt = StructWithVecOfTupleOfNStructAndTuple::create();
+    tt.set_from_inline_string("border: donts topmen owowowo; background-image: linear-gradient(rgb(4,5,6) 1% 51%);".to_string());
+
+    let mut newtt = StructWithVecOfTupleOfNStructAndTuple::create();
+    newtt.background_image.linear_gradient[0].0.rgb = vec!["4".to_string(), "5".to_string(), "6".to_string()];
+    newtt.background_image.linear_gradient[0].1 = "1%".to_string();
+    newtt.background_image.linear_gradient[0].2 ="51%".to_string(); 
+    newtt.border.0 = "donts".to_string();
+    newtt.border.1 = "topmen".to_string();
+    newtt.border.2 = "owowowo".to_string();
+    
+
+    assert_eq!(tt, newtt);
+}
+
+
+// All Test
 
 #[derive(Reflect, PartialEq, Debug)]
 struct DD {
@@ -147,8 +208,6 @@ impl Style for DD {
     }
 }
 
-
-
 #[test]
 fn test_from_string_with_vec_struct_and_vec_of_struct() {
     let mut dd = DD::create();
@@ -171,11 +230,11 @@ fn test_from_string_with_vec_struct_and_vec_of_struct() {
         func2: "str2".to_owned(),
     };
     newdd.prop = vec!(
-        " newpropval1".to_string(),
-        " newpropval2".to_string(),
-        " newpropval3".to_string(),
+        "newpropval1".to_string(),
+        "newpropval2".to_string(),
+        "newpropval3".to_string(),
     );
-    newdd.append = " new_append".to_string();
+    newdd.append = "new_append".to_string();
     newdd.nstruct = NstructWithStrings { func1: "new1".to_string(), func2: "new2".to_string(), func3: "new3".to_string()};
     newdd.prop2 = vec![
         NStruct { func1: "1deg".to_string(), func2: "2deg".to_string(), },
@@ -211,10 +270,10 @@ fn faulty_css() {
     let mut dd = DD::create();
     dd.set_from_inline_string(" 
         nstruct-vec-str-struc: vec(new1,new2,new3) str(new4) struc(func1(str1) func2(str2)); 
-        nstruct: func1(new1) func2 func3(new3) bloat1(b);
+        nstruct: func1(new1) func2() func3(new3) bloat1(b);
         append: new_append;
         prop: newpropval1, newpropval2, newpropval3;
-        prop2: func1(1deg) func2deg), func1(3deg) func2(4deg)".to_string());
+        prop2: func1(1deg) func2deg), func1(3deg func2(4deg)".to_string());
 
     let mut newdd= DD::create();
     newdd.nstruct_vec_str_struc.vec = vec![
@@ -228,11 +287,11 @@ fn faulty_css() {
         func2: "str2".to_owned(),
     };
     newdd.prop = vec!(
-        " newpropval1".to_string(),
-        " newpropval2".to_string(),
-        " newpropval3".to_string(),
+        "newpropval1".to_string(),
+        "newpropval2".to_string(),
+        "newpropval3".to_string(),
     );
-    newdd.append = " new_append".to_string();
+    newdd.append = "new_append".to_string();
     newdd.nstruct = NstructWithStrings { func1: "new1".to_string(), func2: "new2".to_string(), func3: "new3".to_string()};
     newdd.prop2 = vec![
         NStruct { func1: "1deg".to_string(), func2: "2deg".to_string(), },
@@ -241,4 +300,75 @@ fn faulty_css() {
 
 
     assert_ne!(dd, newdd);
+}
+
+#[derive(Reflect, FromReflect)]
+struct RGBA {
+    rgba: Vec<String>,
+}
+
+impl Style for RGBA {
+    fn create() -> Self {
+        Self {
+            rgba: vec!["127".to_string(), "127".to_string(), "127".to_string(), "1".to_string()],
+        }
+    }
+}
+
+#[derive(Reflect)]
+struct Gradient {
+    linear_gradient: (String, Vec<(RGBA, String)>),
+}
+
+impl Style for Gradient {
+    fn create() -> Self {
+        let mut color_1 = RGBA::create();
+        let mut color_2 = RGBA::create();
+        let mut color_3 = RGBA::create();
+        color_1.rgba[0] = "255".to_string();
+        color_2.rgba[1] = "255".to_string();
+        color_3.rgba[2] = "255".to_string();
+
+        let pos_1 = "33%".to_string(); 
+        let pos_2 = "67%".to_string(); 
+        let pos_3 = "100%".to_string(); 
+
+        let gradients = vec![
+            (color_1, pos_1), 
+            (color_2, pos_2), 
+            (color_3, pos_3)
+        ];
+
+        let rotation = "9000deg,".to_string();
+
+        Self {
+            linear_gradient: (rotation, gradients),
+        }
+    }
+}
+
+#[derive(Reflect)]
+struct Realistic<> {
+    background: RGBA,
+    background_image: Gradient,
+}
+
+impl Style for Realistic {
+    fn create() -> Self {
+        let background = RGBA::create();
+        let gradient = Gradient::create();
+        Self { background, background_image: gradient}
+    }
+}
+
+
+// real world example test
+#[test]
+fn realistic_example() {
+    let css = "background: rgba(0, 255, 250, 1); background_image: linear-gradient(90deg, rgba(5, 97, 179, 1) 29%, rgba(0, 255, 250, 1) 56%, rgba(0, 25, 0, 1) 56%, rgba(34, 25, 0, 1) 56%, rgba(5, 97, 179, 1) 78%); ";
+
+    let mut realistic_struct = Realistic::create();
+    realistic_struct.set_from_inline_string(css.into());
+
+    assert_eq!(css,realistic_struct.inline());
 }
