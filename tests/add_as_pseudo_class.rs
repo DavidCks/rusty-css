@@ -81,7 +81,7 @@ fn test_add_as_pseudo_class (){
     b.add_as_pseudo_class(&get_document());
 
 
-    assert_eq!(get_style_content("rusty-css-B_hover"), ".B:hover { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
+    assert_eq!(get_style_content("rusty-css-B_hover"), ".B:hover { prop: 200px; nested:  func1(func_prop1) func2(func_prop2); }");
 }
 
 #[wasm_bindgen_test]
@@ -94,5 +94,5 @@ fn test_add_as_pseudo_class_2 (){
     let b = B_hover::create();
     b.add_as_pseudo_class(&get_document());
 
-    assert_eq!(get_style_content("rusty-css-B_hover"), ".B:hover { prop: 200px; nested: func1( func_prop1) func2( func_prop2); }");
+    assert_eq!(get_style_content("rusty-css-B_hover"), ".B:hover { prop: 200px; nested:  func1(func_prop1) func2(func_prop2); }");
 }
