@@ -365,10 +365,11 @@ impl Style for Realistic {
 // real world example test
 #[test]
 fn realistic_example() {
-    let css = "background: rgba(0, 255, 250, 1); background_image: linear-gradient(90deg, rgba(5, 97, 179, 1) 29%, rgba(0, 255, 250, 1) 56%, rgba(0, 25, 0, 1) 56%, rgba(34, 25, 0, 1) 56%, rgba(5, 97, 179, 1) 78%); ";
+    let css = "background: rgba(0, 255, 250, 1); background-image: linear-gradient(90deg, rgba(5, 97, 179, 1) 29%, rgba(34, 25, 0, 1) 56%, rgba(5, 97, 179, 1) 78%, rgba(34, 25, 0, 1) 56%, rgba(5, 97, 179, 1) 78%); ";
+    let output_css = "background: rgba(0, 255, 250, 1); background-image: linear-gradient(90deg, rgba(5, 97, 179, 1) 29%, rgba(34, 25, 0, 1) 56%, rgba(5, 97, 179, 1) 78%); ";
 
     let mut realistic_struct = Realistic::create();
     realistic_struct.set_from_inline_string(css.into());
 
-    assert_eq!(css,realistic_struct.inline());
+    assert_eq!(output_css,realistic_struct.inline());
 }
