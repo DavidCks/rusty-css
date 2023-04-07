@@ -11,6 +11,8 @@
 
 ## a rusty way to implement css in rust
 
+OPEN TO CONTRIBUTIONS: I don't have time to improve on this project for the forseable future so any contributinos, big or small, are very welcome.
+
 ATTENTION: Development is currently on hold as I focus on my new job. Once I'm settled in I'll resume working on it.
 Feel free to send w pull request if you have some good ideas you want to implement.
 Some ideas:
