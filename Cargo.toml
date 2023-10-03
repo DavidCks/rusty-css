@@ -18,7 +18,7 @@ exclude = [
 
 
 [dependencies]
-yew = "0.20"
+yew = "0.21"
 # used for logging to the dev tools console in the browser
 wasm-logger = "0.2"
 log = "0.4.6"
